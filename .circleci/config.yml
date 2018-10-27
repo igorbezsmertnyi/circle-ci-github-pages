@@ -1,0 +1,75 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: circleci/node:8.10
+    environment:
+      NODE_ENV: $NODE_ENV
+      BASE_URL: $BASE_URL
+    working_directory: ~/circle-ci-github-pages
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - javascript-dependencies-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - javascript-dependencies-{{ checksum "package-lock.json" }}
+            - javascript-dependencies
+      - run:
+          name: Install dependencies
+          command: npm install
+      - run:
+          name: Build project
+          command: npm run build
+      - save_cache:
+          paths:
+            - node_modules
+            - dist
+          key: javascript-dependencies-v3-{{ .Branch }}-{{ checksum "package-lock.json" }}
+
+  deploy:
+    docker:
+      - image: circleci/node:8.10
+    working_directory: ~/circle-ci-github-pages
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - javascript-dependencies-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - javascript-dependencies-{{ checksum "package-lock.json" }}
+            - javascript-dependencies
+
+      - run:
+          name: Config Github user
+          command: |
+            git config --global user.email $GITHUB_EMAIL
+            git config --global user.name $GITHUB_NAME
+
+      - run:
+          name: Checkout target branch
+          command: git checkout $TARGET_BRANCH
+
+      - run:
+          name: Create commit
+          command: |
+            git add -f dist
+            git commit -m "Automated deployment to GitHub Pages ${CIRCLE_SHA1}"
+
+      - run:
+          name: Publish project
+          command: git subtree push --prefix dist -q https://${GITHUB_TOKEN}@github.com/igorbezsmertnyi/circle-ci-github-pages $TARGET_BRANCH
+
+workflows:
+  version: 2.1
+  main:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: master
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
