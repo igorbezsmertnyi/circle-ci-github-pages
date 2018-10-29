@@ -46,10 +46,6 @@ jobs:
             git config --global user.name $GITHUB_NAME
 
       - run:
-          name: Checkout target branch
-          command: git checkout $TARGET_BRANCH
-
-      - run:
           name: Create commit
           command: |
             git add -f dist
@@ -68,8 +64,8 @@ workflows:
             branches:
               only: master
       - deploy:
-          requires:
-            - build
           filters:
             branches:
               only: master
+          requires:
+            - build
