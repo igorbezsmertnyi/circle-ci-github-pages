@@ -27,6 +27,8 @@ jobs:
   deploy:
     docker:
       - image: circleci/node:8.10
+    environment:
+      ORIGIN: https://${GITHUB_TOKEN}@github.com/igorbezsmertnyi/circle-ci-github-pages
     working_directory: ~/circle-ci-github-pages
     steps:
       - checkout
@@ -48,7 +50,7 @@ jobs:
 
       - run:
           name: Publish project
-          command: git subtree push --prefix dist -q https://${GITHUB_TOKEN}@github.com/igorbezsmertnyi/circle-ci-github-pages $TARGET_BRANCH
+          command: git subtree push --prefix dist -q $ORIGIN $TARGET_BRANCH
 
 workflows:
   version: 2.1

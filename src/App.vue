@@ -16,7 +16,7 @@ import HelloWorld from './components/HelloWorld.vue';
 })
 
 export default class App extends Vue {
-  private msg: string = 'Welcome to Your Vue.js + TypeScript App'
+  private msg: string = 'Welcome to static page deployed via CircleCI'
 }
 </script>
 <style lang="stylus">
