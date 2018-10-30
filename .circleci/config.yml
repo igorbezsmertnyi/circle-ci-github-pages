@@ -9,7 +9,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - javascript-dependencies-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - javascript-dependencies-{{ .Branch }}
             - javascript-dependencies-{{ checksum "package-lock.json" }}
             - javascript-dependencies
       - run:
@@ -22,25 +22,27 @@ jobs:
           paths:
             - node_modules
             - dist
-          key: javascript-dependencies-{{ .Branch }}-{{ checksum "package-lock.json" }}
+          key: javascript-dependencies-{{ .Branch }}
 
   deploy:
     docker:
       - image: circleci/node:8.10
-    environment:
-      ORIGIN: https://${GITHUB_TOKEN}@github.com/igorbezsmertnyi/circle-ci-github-pages
     working_directory: ~/circle-ci-github-pages
     steps:
       - checkout
       - restore_cache:
           keys:
-            - javascript-dependencies-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - javascript-dependencies-{{ .Branch }}
 
       - run:
           name: Config Github user
           command: |
             git config --global user.email $GITHUB_EMAIL
             git config --global user.name $GITHUB_NAME
+
+      - run:
+          name: Copy CI config
+          command: cp -r .circleci/ dist/.circleci
 
       - run:
           name: Create commit
@@ -50,10 +52,9 @@ jobs:
 
       - run:
           name: Publish project
-          command: git subtree push --prefix dist -q $ORIGIN $TARGET_BRANCH
+          command: git push https://${GITHUB_TOKEN}@github.com/igorbezsmertnyi/circle-ci-github-pages `git subtree split --prefix dist master`:refs/heads/gh-pages --force &> /dev/null
 
 workflows:
-  version: 2.1
   main:
     jobs:
       - build:
