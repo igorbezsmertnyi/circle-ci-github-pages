@@ -1,0 +1,69 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: circleci/node:8.10
+    working_directory: ~/circle-ci-github-pages
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - javascript-dependencies-{{ .Branch }}
+            - javascript-dependencies-{{ checksum "package-lock.json" }}
+            - javascript-dependencies
+      - run:
+          name: Install dependencies
+          command: npm install
+      - run:
+          name: Build project
+          command: npm run release
+      - save_cache:
+          paths:
+            - node_modules
+            - dist
+          key: javascript-dependencies-{{ .Branch }}
+
+  deploy:
+    docker:
+      - image: circleci/node:8.10
+    working_directory: ~/circle-ci-github-pages
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - javascript-dependencies-{{ .Branch }}
+
+      - run:
+          name: Config Github user
+          command: |
+            git config --global user.email $GITHUB_EMAIL
+            git config --global user.name $GITHUB_NAME
+
+      - run:
+          name: Copy CI config
+          command: cp -r .circleci/ dist/.circleci
+
+      - run:
+          name: Create commit
+          command: |
+            git add -f dist
+            git commit -m "Automated deployment to GitHub Pages ${CIRCLE_SHA1}"
+
+      - run:
+          name: Publish project
+          command: git push https://${GITHUB_TOKEN}@github.com/igorbezsmertnyi/circle-ci-github-pages `git subtree split --prefix dist master`:refs/heads/gh-pages --force &> /dev/null
+
+workflows:
+  main:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: master
+      - deploy:
+          filters:
+            branches:
+              only: master
+          requires:
+            - build
